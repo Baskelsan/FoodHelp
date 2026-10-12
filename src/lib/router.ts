@@ -5,6 +5,7 @@ import { useMemo, useSyncExternalStore } from 'react'
 export type Route =
   | { name: 'recipes' }
   | { name: 'recipe-new' }
+  | { name: 'recipe-import' }
   | { name: 'recipe'; id: string }
   | { name: 'recipe-edit'; id: string }
   | { name: 'account' }
@@ -12,6 +13,7 @@ export type Route =
 export const paths = {
   recipes: '/recettes',
   recipeNew: '/recettes/nouvelle',
+  recipeImport: '/recettes/importer',
   recipe: (id: string) => `/recettes/${id}`,
   recipeEdit: (id: string) => `/recettes/${id}/modifier`,
   account: '/compte',
@@ -22,6 +24,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'compte') return { name: 'account' }
   if (parts[0] === 'recettes' && parts[1]) {
     if (parts[1] === 'nouvelle') return { name: 'recipe-new' }
+    if (parts[1] === 'importer') return { name: 'recipe-import' }
     if (parts[2] === 'modifier') return { name: 'recipe-edit', id: parts[1] }
     return { name: 'recipe', id: parts[1] }
   }

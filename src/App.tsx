@@ -6,6 +6,7 @@ import { href, paths, useRoute, type Route } from './lib/router.ts'
 import { supabaseConfigured } from './lib/supabase.ts'
 import RecipeDetailScreen from './recipes/RecipeDetailScreen.tsx'
 import RecipeFormScreen from './recipes/RecipeFormScreen.tsx'
+import RecipeImportScreen from './recipes/RecipeImportScreen.tsx'
 import RecipeListScreen from './recipes/RecipeListScreen.tsx'
 
 export default function App() {
@@ -72,6 +73,8 @@ function Screen({ route, session }: { route: Route; session: Session }) {
       return <RecipeListScreen />
     case 'recipe-new':
       return <RecipeFormScreen />
+    case 'recipe-import':
+      return <RecipeImportScreen />
     case 'recipe':
       return <RecipeDetailScreen key={route.id} id={route.id} />
     case 'recipe-edit':

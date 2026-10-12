@@ -8,6 +8,7 @@
   --accent: #2f7d4f;
   --accent-text: #ffffff;
   --danger: #b3261e;
+  --warning: #8a5a00;
   --radius: 14px;
   --tap: 48px;
 
@@ -27,6 +28,7 @@
     --accent: #5fb37f;
     --accent-text: #10210f;
     --danger: #f2b8b5;
+    --warning: #f0c36d;
   }
 }
 
@@ -623,4 +625,54 @@ a.button {
 
 textarea {
   resize: vertical;
+}
+
+/* Import de recettes */
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.warning {
+  margin: 0;
+  color: var(--warning);
+}
+
+.import-input {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.import-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import-item p {
+  margin: 0;
+}
+
+.import-check {
+  min-height: 32px;
+}
+
+.import-check input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  flex: none;
+}
+
+.import-ingredients {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.import-messages {
+  margin: 0;
+  padding-left: 20px;
 }

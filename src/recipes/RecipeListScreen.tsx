@@ -43,9 +43,14 @@ export default function RecipeListScreen() {
     <>
       <header className="app-header header-row">
         <h1>Recettes</h1>
-        <a className="button button-small" href={href(paths.recipeNew)}>
-          + Nouvelle
-        </a>
+        <div className="header-actions">
+          <a className="button button-small button-secondary" href={href(paths.recipeImport)}>
+            Importer
+          </a>
+          <a className="button button-small" href={href(paths.recipeNew)}>
+            + Nouvelle
+          </a>
+        </div>
       </header>
 
       <main className="app-main">

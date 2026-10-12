@@ -86,5 +86,8 @@ export interface SaveRecipePayload {
     optional: boolean
     section: string | null
     note: string | null
+    /** Complètent la fiche de l'ingrédient si elle n'a pas encore ces valeurs */
+    piece_weight_g?: number
+    density_g_per_ml?: number
   }[]
 }
