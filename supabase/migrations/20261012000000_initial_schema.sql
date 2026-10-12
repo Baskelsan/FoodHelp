@@ -248,7 +248,16 @@ create policy "ciqual_foods: lecture" on public.ciqual_foods
 
 -- -----------------------------------------------------------------------------
 -- RLS : tables métier (chacun ne voit et ne modifie que ses lignes)
+-- Activation explicite (et non dans le bloc dynamique) pour que l'analyseur
+-- du SQL Editor Supabase la détecte.
 -- -----------------------------------------------------------------------------
+alter table public.aisles              enable row level security;
+alter table public.ingredients         enable row level security;
+alter table public.recipes             enable row level security;
+alter table public.recipe_ingredients  enable row level security;
+alter table public.inventory_items     enable row level security;
+alter table public.shopping_list_items enable row level security;
+
 do $$
 declare
   t text;
@@ -258,8 +267,6 @@ begin
     'inventory_items', 'shopping_list_items'
   ]
   loop
-    execute format('alter table public.%I enable row level security', t);
-
     execute format(
       'create policy %I on public.%I for select to authenticated
          using ((select auth.uid()) = user_id)',
