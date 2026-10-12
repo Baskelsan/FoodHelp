@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --text: #1c1b19;
+  --muted: #6b6760;
+  --border: #e2ded6;
+  --accent: #2f7d4f;
+  --accent-text: #ffffff;
+  --radius: 14px;
+  --tap: 48px;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1b19;
+    --surface: #2a2926;
+    --text: #f2efe9;
+    --muted: #a19c93;
+    --border: #3a3834;
+    --accent: #5fb37f;
+    --accent-text: #10210f;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Safe areas : encoche en haut, barre d'accueil en bas */
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.app-header {
+  padding: 12px 16px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+.app-footer {
+  padding: 12px 16px;
+  font-size: 0.85rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.card p {
+  margin: 0 0 8px;
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 16px minimum, sinon Safari iOS zoome au focus */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  font-size: max(16px, 1rem);
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  min-height: var(--tap);
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.button {
+  min-height: var(--tap);
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.button:active {
+  opacity: 0.8;
+}
