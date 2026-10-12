@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase.ts'
+import { clearShoppingCache } from './shopping/useShoppingList.ts'
 
 const isStandalone =
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -18,6 +19,7 @@ export default function AccountScreen({ session }: { session: Session }) {
     setSigningOut(true)
     // scope local : ne déconnecte que cet appareil
     await supabase.auth.signOut({ scope: 'local' })
+    clearShoppingCache()
   }
 
   return (

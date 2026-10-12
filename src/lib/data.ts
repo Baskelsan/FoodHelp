@@ -1,8 +1,12 @@
 import type {
+  Aisle,
+  Ingredient,
   IngredientSummary,
+  InventoryItem,
   RecipeSummary,
   RecipeWithIngredients,
   SaveRecipePayload,
+  ShoppingListItem,
   Unit,
 } from './db-types.ts'
 import { supabase } from './supabase.ts'
@@ -80,5 +84,189 @@ export async function saveRecipe(payload: SaveRecipePayload): Promise<string> {
 
 export async function deleteRecipe(id: string): Promise<void> {
   const { error } = await supabase.from('recipes').delete().eq('id', id)
+  if (error) throw error
+}
+
+// --- Ingrédients ---------------------------------------------------------------
+
+const INGREDIENT_REF = 'id, name, default_unit, aisle_id, density_g_per_ml, piece_weight_g'
+
+export async function getIngredient(id: string): Promise<Ingredient | null> {
+  const { data, error } = await supabase.from('ingredients').select('*').eq('id', id).maybeSingle()
+  if (error) throw error
+  return data as Ingredient | null
+}
+
+export async function updateIngredient(
+  id: string,
+  patch: Partial<Omit<Ingredient, 'id'>>,
+): Promise<void> {
+  const { error } = await supabase.from('ingredients').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+/** Retrouve un ingrédient du catalogue par nom (sans casse), ou le crée. */
+export async function findOrCreateIngredient(
+  name: string,
+  defaultUnit: string,
+  catalog: IngredientSummary[],
+): Promise<IngredientSummary> {
+  const clean = name.trim()
+  const known = catalog.find((c) => c.name.toLowerCase() === clean.toLowerCase())
+  if (known) return known
+  const { data, error } = await supabase
+    .from('ingredients')
+    .insert({ name: clean, default_unit: defaultUnit })
+    .select('id, name, default_unit')
+    .single()
+  if (error) {
+    // Créé entre-temps (catalogue pas à jour) : on le relit
+    if (error.code === '23505') {
+      const fresh = await listIngredients()
+      const found = fresh.find((c) => c.name.toLowerCase() === clean.toLowerCase())
+      if (found) return found
+    }
+    throw error
+  }
+  return data as IngredientSummary
+}
+
+// --- Rayons ---------------------------------------------------------------------
+
+export const DEFAULT_AISLES = [
+  'Fruits et légumes',
+  'Boulangerie',
+  'Boucherie / Poissonnerie',
+  'Crèmerie',
+  'Épicerie salée',
+  'Épicerie sucrée',
+  'Surgelés',
+  'Boissons',
+  'Hygiène / Maison',
+]
+
+let defaultsPromise: Promise<void> | null = null
+
+/** Crée les rayons par défaut si l'utilisateur n'en a aucun (une fois par session). */
+function ensureDefaultAisles(): Promise<void> {
+  defaultsPromise ??= (async () => {
+    const { count, error } = await supabase
+      .from('aisles')
+      .select('id', { count: 'exact', head: true })
+    if (error) throw error
+    if (count) return
+    const { error: insertError } = await supabase
+      .from('aisles')
+      .insert(DEFAULT_AISLES.map((name, position) => ({ name, position })))
+    // 23505 : déjà créés depuis un autre appareil
+    if (insertError && insertError.code !== '23505') throw insertError
+  })().catch((e) => {
+    defaultsPromise = null
+    throw e
+  })
+  return defaultsPromise
+}
+
+export async function listAisles(): Promise<Aisle[]> {
+  await ensureDefaultAisles()
+  const { data, error } = await supabase
+    .from('aisles')
+    .select('id, name, position')
+    .order('position')
+    .order('name')
+  if (error) throw error
+  return data as Aisle[]
+}
+
+export async function createAisle(name: string, position: number): Promise<void> {
+  const { error } = await supabase.from('aisles').insert({ name: name.trim(), position })
+  if (error) throw error
+}
+
+export async function updateAisle(id: string, patch: Partial<Omit<Aisle, 'id'>>): Promise<void> {
+  const { error } = await supabase.from('aisles').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteAisle(id: string): Promise<void> {
+  const { error } = await supabase.from('aisles').delete().eq('id', id)
+  if (error) throw error
+}
+
+// --- Stock ----------------------------------------------------------------------
+
+const INVENTORY_SELECT = `id, ingredient_id, quantity, unit, expires_on, date_type, note, created_at,
+  ingredient:ingredients ( ${INGREDIENT_REF} )`
+
+export async function listInventory(): Promise<InventoryItem[]> {
+  const { data, error } = await supabase.from('inventory_items').select(INVENTORY_SELECT)
+  if (error) throw error
+  return data as unknown as InventoryItem[]
+}
+
+export async function getInventoryItem(id: string): Promise<InventoryItem | null> {
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .select(INVENTORY_SELECT)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data as unknown as InventoryItem | null
+}
+
+export type InventoryInput = Pick<
+  InventoryItem,
+  'ingredient_id' | 'quantity' | 'unit' | 'expires_on' | 'date_type' | 'note'
+>
+
+export async function addInventoryItems(items: Partial<InventoryInput>[]): Promise<void> {
+  if (items.length === 0) return
+  const { error } = await supabase.from('inventory_items').insert(items)
+  if (error) throw error
+}
+
+export async function updateInventoryItem(id: string, patch: InventoryInput): Promise<void> {
+  const { error } = await supabase.from('inventory_items').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteInventoryItem(id: string): Promise<void> {
+  const { error } = await supabase.from('inventory_items').delete().eq('id', id)
+  if (error) throw error
+}
+
+// --- Liste de courses -------------------------------------------------------------
+
+const SHOPPING_SELECT = `id, ingredient_id, label, quantity, unit, checked, recipe_id, created_at,
+  ingredient:ingredients ( ${INGREDIENT_REF} )`
+
+export async function listShopping(): Promise<ShoppingListItem[]> {
+  const { data, error } = await supabase
+    .from('shopping_list_items')
+    .select(SHOPPING_SELECT)
+    .order('created_at')
+  if (error) throw error
+  return data as unknown as ShoppingListItem[]
+}
+
+export async function insertShoppingItems(
+  items: { ingredient_id: string; quantity: number | null; unit: string | null; recipe_id?: string | null }[],
+): Promise<void> {
+  if (items.length === 0) return
+  const { error } = await supabase.from('shopping_list_items').insert(items)
+  if (error) throw error
+}
+
+export async function updateShoppingItem(
+  id: string,
+  patch: Partial<Pick<ShoppingListItem, 'quantity' | 'unit' | 'checked' | 'recipe_id'>>,
+): Promise<void> {
+  const { error } = await supabase.from('shopping_list_items').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteShoppingItems(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const { error } = await supabase.from('shopping_list_items').delete().in('id', ids)
   if (error) throw error
 }

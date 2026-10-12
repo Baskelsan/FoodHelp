@@ -2,12 +2,18 @@ import type { Session } from '@supabase/supabase-js'
 import AccountScreen from './AccountScreen.tsx'
 import LoginScreen from './auth/LoginScreen.tsx'
 import { useSession } from './auth/useSession.ts'
-import { href, paths, useRoute, type Route } from './lib/router.ts'
+import IngredientScreen from './ingredients/IngredientScreen.tsx'
+import InventoryFormScreen from './inventory/InventoryFormScreen.tsx'
+import InventoryScreen from './inventory/InventoryScreen.tsx'
+import { href, paths, tabOf, useRoute, type Route, type Tab } from './lib/router.ts'
 import { supabaseConfigured } from './lib/supabase.ts'
 import RecipeDetailScreen from './recipes/RecipeDetailScreen.tsx'
 import RecipeFormScreen from './recipes/RecipeFormScreen.tsx'
 import RecipeImportScreen from './recipes/RecipeImportScreen.tsx'
 import RecipeListScreen from './recipes/RecipeListScreen.tsx'
+import AislesScreen from './shopping/AislesScreen.tsx'
+import ShoppingGenerateScreen from './shopping/ShoppingGenerateScreen.tsx'
+import ShoppingScreen from './shopping/ShoppingScreen.tsx'
 
 export default function App() {
   if (!supabaseConfigured) {
@@ -39,29 +45,32 @@ function AuthGate() {
   return session ? <Shell session={session} /> : <LoginScreen />
 }
 
+const TABS: { tab: Tab; path: string; icon: string; label: string }[] = [
+  { tab: 'recipes', path: paths.recipes, icon: '📖', label: 'Recettes' },
+  { tab: 'inventory', path: paths.inventory, icon: '🧺', label: 'Stock' },
+  { tab: 'shopping', path: paths.shopping, icon: '🛒', label: 'Courses' },
+  { tab: 'account', path: paths.account, icon: '👤', label: 'Compte' },
+]
+
 function Shell({ session }: { session: Session }) {
   const route = useRoute()
+  const current = tabOf(route)
 
   return (
     <div className="app has-tabbar">
       <Screen route={route} session={session} />
       <nav className="tabbar" aria-label="Navigation principale">
-        <a
-          href={href(paths.recipes)}
-          className={route.name === 'account' ? 'tab' : 'tab tab-active'}
-          aria-current={route.name !== 'account' ? 'page' : undefined}
-        >
-          <span aria-hidden="true">📖</span>
-          Recettes
-        </a>
-        <a
-          href={href(paths.account)}
-          className={route.name === 'account' ? 'tab tab-active' : 'tab'}
-          aria-current={route.name === 'account' ? 'page' : undefined}
-        >
-          <span aria-hidden="true">👤</span>
-          Compte
-        </a>
+        {TABS.map(({ tab, path, icon, label }) => (
+          <a
+            key={tab}
+            href={href(path)}
+            className={tab === current ? 'tab tab-active' : 'tab'}
+            aria-current={tab === current ? 'page' : undefined}
+          >
+            <span aria-hidden="true">{icon}</span>
+            {label}
+          </a>
+        ))}
       </nav>
     </div>
   )
@@ -79,6 +88,20 @@ function Screen({ route, session }: { route: Route; session: Session }) {
       return <RecipeDetailScreen key={route.id} id={route.id} />
     case 'recipe-edit':
       return <RecipeFormScreen key={route.id} id={route.id} />
+    case 'inventory':
+      return <InventoryScreen />
+    case 'inventory-new':
+      return <InventoryFormScreen />
+    case 'inventory-item':
+      return <InventoryFormScreen key={route.id} id={route.id} />
+    case 'shopping':
+      return <ShoppingScreen />
+    case 'shopping-generate':
+      return <ShoppingGenerateScreen />
+    case 'aisles':
+      return <AislesScreen />
+    case 'ingredient':
+      return <IngredientScreen key={route.id} id={route.id} />
     case 'account':
       return <AccountScreen session={session} />
   }

@@ -67,6 +67,44 @@ export interface RecipeWithIngredients extends Recipe {
   recipe_ingredients: RecipeIngredient[]
 }
 
+export interface Aisle {
+  id: string
+  name: string
+  position: number
+}
+
+/** Champs de l'ingrédient joints aux lignes de stock et de courses */
+export type IngredientRef = Pick<
+  Ingredient,
+  'id' | 'name' | 'default_unit' | 'aisle_id' | 'density_g_per_ml' | 'piece_weight_g'
+>
+
+export type DateType = 'DLC' | 'DDM'
+
+export interface InventoryItem {
+  id: string
+  ingredient_id: string
+  quantity: number | null
+  unit: string | null
+  expires_on: string | null
+  date_type: DateType | null
+  note: string | null
+  created_at: string
+  ingredient: IngredientRef
+}
+
+export interface ShoppingListItem {
+  id: string
+  ingredient_id: string | null
+  label: string | null
+  quantity: number | null
+  unit: string | null
+  checked: boolean
+  recipe_id: string | null
+  created_at: string
+  ingredient: IngredientRef | null
+}
+
 /** Paramètre de la fonction SQL save_recipe */
 export interface SaveRecipePayload {
   id?: string

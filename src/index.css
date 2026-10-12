@@ -676,3 +676,277 @@ textarea {
   margin: 0;
   padding-left: 20px;
 }
+
+/* ---------------------------------------------------------------------------
+   Étape 5 : stock, courses, rayons
+   --------------------------------------------------------------------------- */
+
+.link-like {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+a.icon-button,
+a.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.offline-banner {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warning);
+  color: var(--bg);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Ajout rapide */
+.add-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.add-item input,
+.add-item select {
+  width: 100%;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.add-item-details {
+  display: grid;
+  grid-template-columns: 5rem 1fr auto;
+  gap: 8px;
+}
+
+/* Liste de courses */
+.aisle-title {
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.shopping-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.shopping-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.shopping-row:last-child {
+  border-bottom: none;
+}
+
+.shopping-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 1.05rem;
+}
+
+.tick {
+  flex: 0 0 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.shopping-name {
+  flex: 1;
+}
+
+.shopping-qty {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.shopping-row-checked .tick {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.shopping-row-checked .shopping-name,
+.shopping-row-checked .shopping-qty {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.shopping-row .icon-button {
+  width: 40px;
+  height: 40px;
+  color: var(--muted);
+}
+
+.shopping-row .icon-danger {
+  color: var(--danger);
+}
+
+.finish {
+  margin-top: 12px;
+}
+
+/* Génération depuis des recettes */
+.pick-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.pick-recipe input[type='checkbox'],
+.preview-line input[type='checkbox'],
+.checkbox > input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  flex: none;
+}
+
+.servings-small {
+  padding-left: 30px;
+}
+
+.servings-small .round-button {
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+}
+
+.preview-line {
+  padding: 4px 12px;
+}
+
+.badge-ok {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Rayons */
+.aisle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aisle-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stock */
+.stock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stock-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 48px;
+  padding: 4px 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.stock-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.expiry-expired {
+  border-left-color: var(--danger);
+}
+
+.expiry-expired .expiry-label {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.expiry-soon {
+  border-left-color: var(--warning);
+}
+
+.expiry-soon .expiry-label {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.expiry-ok .expiry-label {
+  color: var(--muted);
+}
+
+.date-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.date-row input {
+  min-width: 0;
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.segment {
+  min-width: 56px;
+  min-height: var(--tap);
+  padding: 0 12px;
+  background: var(--surface);
+  border: none;
+  font-weight: 600;
+}
+
+.segment-active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
