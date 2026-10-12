@@ -200,3 +200,427 @@ textarea {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------------------------------------------------------------------------
+   Étape 4 : navigation, listes, recettes
+   --------------------------------------------------------------------------- */
+
+a {
+  color: var(--accent);
+}
+
+h2 {
+  margin: 8px 0;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin: 12px 0 4px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.center {
+  text-align: center;
+}
+
+.hint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
+
+.pre-line {
+  white-space: pre-line;
+}
+
+/* Barre d'onglets fixe en bas, au-dessus de la barre d'accueil iOS */
+.has-tabbar {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab span {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.tab-active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-meta {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.button-small {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+.button-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Tags */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.chip-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Liste des recettes */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.list-title {
+  font-weight: 600;
+}
+
+.list-meta {
+  font-size: 0.85rem;
+}
+
+/* Fiche recette */
+.description {
+  margin: 0;
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.servings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.servings-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.round-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.round-button:disabled {
+  opacity: 0.4;
+}
+
+.ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ingredients > li {
+  border-bottom: 1px solid var(--border);
+}
+
+.ingredient {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 1rem;
+}
+
+.ingredient-qty {
+  flex: 0 0 7.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ingredient-name {
+  flex: 1;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.limiting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.row-inputs {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  gap: 8px;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.step-number {
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.step-done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* Formulaire */
+.error-box {
+  margin: 0;
+  padding: 12px 12px 12px 32px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  color: var(--danger);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.grid-3 input {
+  width: 100%;
+  min-width: 0;
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fieldset legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.edit-row input,
+.edit-row select,
+.edit-row textarea {
+  width: 100%;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.ingredient-inputs {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 8px;
+}
+
+.row-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.row-tools-end {
+  justify-content: flex-end;
+}
+
+.row-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 1.1rem;
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+}
+
+.icon-danger {
+  color: var(--danger);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.edit-row .checkbox input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+}
+
+textarea {
+  resize: vertical;
+}

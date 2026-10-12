@@ -13,6 +13,7 @@ npm run dev                  # http://localhost:5173/FoodHelp/
 
 - `npm run build` : vérification TypeScript + build de production dans `dist/`
 - `npm run preview` : sert `dist/` en local (service worker actif)
+- `npm test` : tests unitaires (vitest)
 
 Les icônes PWA sont générées au build depuis `public/icon.svg`.
 

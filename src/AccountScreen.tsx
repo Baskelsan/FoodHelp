@@ -11,7 +11,7 @@ const buildDate = new Date(__BUILD_DATE__).toLocaleString('fr-FR', {
   timeStyle: 'short',
 })
 
-export default function HomeScreen({ session }: { session: Session }) {
+export default function AccountScreen({ session }: { session: Session }) {
   const [signingOut, setSigningOut] = useState(false)
 
   async function signOut() {
@@ -21,9 +21,9 @@ export default function HomeScreen({ session }: { session: Session }) {
   }
 
   return (
-    <div className="app">
+    <>
       <header className="app-header">
-        <h1>FoodHelp</h1>
+        <h1>Compte</h1>
       </header>
 
       <main className="app-main">
@@ -38,12 +38,17 @@ export default function HomeScreen({ session }: { session: Session }) {
           </p>
         </section>
 
-        <button type="button" className="button button-secondary" onClick={signOut} disabled={signingOut}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={signOut}
+          disabled={signingOut}
+        >
           {signingOut ? 'Déconnexion…' : 'Se déconnecter'}
         </button>
-      </main>
 
-      <footer className="app-footer muted">Version du {buildDate}</footer>
-    </div>
+        <p className="muted small">Version du {buildDate}</p>
+      </main>
+    </>
   )
 }
