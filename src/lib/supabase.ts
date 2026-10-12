@@ -1,9 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-/** Faux si les variables d'environnement n'ont pas été fournies au build. */
+// Seule l'origine compte : tolère une URL collée avec un chemin (ex. .../rest/v1/)
+function projectOrigin(raw: string | undefined): string {
+  try {
+    return raw ? new URL(raw.trim()).origin : ''
+  } catch {
+    return ''
+  }
+}
+const url = projectOrigin(import.meta.env.VITE_SUPABASE_URL)
+
+/** Faux si les variables d'environnement n'ont pas été fournies (ou sont invalides) au build. */
 export const supabaseConfigured = Boolean(url && anonKey)
 
 // Sans configuration, App affiche un message d'erreur et n'appelle jamais ce client :
