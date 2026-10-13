@@ -108,6 +108,34 @@ L'app corrige automatiquement (avec un avertissement) :
 Sont bloquants : titre manquant, ingrédient sans nom, quantité illisible, unité inconnue.
 Une recette dont le titre existe déjà est décochée par défaut pour éviter les doublons.
 
+## Sauvegarde complète (`foodhelp-backup`)
+
+L'écran **Compte → Sauvegarde** exporte un fichier `foodhelp-sauvegarde-AAAA-MM-JJ.json` :
+
+```json
+{
+  "format": "foodhelp-backup",
+  "version": 1,
+  "exported_at": "2026-10-13T20:00:00.000Z",
+  "recipes": [ "… recettes au format ci-dessus …" ],
+  "ingredients": [
+    { "name": "Œuf", "default_unit": "piece", "aisle": "Crèmerie", "ciqual_code": 22000,
+      "kcal_per_100g": null, "density_g_per_ml": null, "piece_weight_g": 55 }
+  ],
+  "aisles": [ { "name": "Crèmerie", "position": 0 } ],
+  "inventory": [
+    { "ingredient": "Lait", "quantity": 1, "unit": "l", "expires_on": "2026-10-20",
+      "date_type": "DLC", "note": null }
+  ],
+  "shopping_list": [ { "ingredient": "Œuf", "quantity": 6, "unit": "piece", "checked": false } ]
+}
+```
+
+Les liens se font par nom d'ingrédient (pas d'identifiants internes). Aucune donnée de compte
+n'est exportée. Coller ce fichier dans **Recettes → Importer** restaure les recettes (avec
+poids par pièce et densités) ; la restauration des autres sections est prévue avec la
+sauvegarde automatique.
+
 ## Instructions à donner à Claude
 
 À coller dans les instructions du projet Claude « cuisine » (ou en début de conversation) :

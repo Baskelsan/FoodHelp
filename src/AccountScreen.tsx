@@ -53,6 +53,9 @@ export default function AccountScreen({ session }: { session: Session }) {
         <a className="button button-secondary" href={href(paths.caloriesTodo)}>
           Calories à compléter
         </a>
+        <a className="button button-secondary" href={href(paths.backup)}>
+          Sauvegarde (export JSON)
+        </a>
 
         <p className="muted small">Version du {buildDate}</p>
         <p className="muted small">

@@ -11,6 +11,7 @@ import type {
   ShoppingListItem,
   Unit,
 } from './db-types.ts'
+import type { BackupRecipeSource } from './backup.ts'
 import { supabase } from './supabase.ts'
 
 /** Message lisible pour une erreur Supabase ou réseau. */
@@ -337,4 +338,25 @@ export async function listIngredientsWithoutKcal(): Promise<IngredientSummary[]>
     .order('name')
   if (error) throw error
   return data as IngredientSummary[]
+}
+
+// --- Sauvegarde -------------------------------------------------------------------
+
+/** Toutes les recettes avec leurs ingrédients, pour l'export. */
+export async function listRecipesForBackup(): Promise<BackupRecipeSource[]> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select(
+      `title, description, servings, prep_minutes, cook_minutes, steps, notes, source, tags,
+       recipe_ingredients ( position, quantity, unit, optional, section, note,
+         ingredient:ingredients ( name, density_g_per_ml, piece_weight_g ) )`,
+    )
+  if (error) throw error
+  return data as unknown as BackupRecipeSource[]
+}
+
+export async function listAllIngredients(): Promise<Ingredient[]> {
+  const { data, error } = await supabase.from('ingredients').select('*')
+  if (error) throw error
+  return data as Ingredient[]
 }

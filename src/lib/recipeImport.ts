@@ -295,7 +295,9 @@ export function parseImport(input: string): ParseResult {
     list = data
   } else if (isObject(data) && Array.isArray(data.recipes)) {
     list = data.recipes
-    if (data.format !== undefined && data.format !== FORMAT_NAME) {
+    // Une sauvegarde complète contient aussi les recettes au même format
+    const knownFormat = data.format === FORMAT_NAME || data.format === 'foodhelp-backup'
+    if (data.format !== undefined && !knownFormat) {
       warnings.push(`Format « ${String(data.format)} » inattendu : import tenté quand même.`)
     }
     if (typeof data.version === 'number' && data.version > FORMAT_VERSION) {

@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import AccountScreen from './AccountScreen.tsx'
+import BackupScreen from './BackupScreen.tsx'
 import LoginScreen from './auth/LoginScreen.tsx'
 import { useSession } from './auth/useSession.ts'
 import CaloriesTodoScreen from './ingredients/CaloriesTodoScreen.tsx'
@@ -105,6 +106,8 @@ function Screen({ route, session }: { route: Route; session: Session }) {
       return <IngredientScreen key={route.id} id={route.id} />
     case 'calories-todo':
       return <CaloriesTodoScreen />
+    case 'backup':
+      return <BackupScreen />
     case 'account':
       return <AccountScreen session={session} />
   }
