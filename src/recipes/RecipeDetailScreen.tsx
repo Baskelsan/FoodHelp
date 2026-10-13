@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import type { RecipeIngredient, RecipeWithIngredients, Unit } from '../lib/db-types.ts'
+import { formatKcal, recipeCalories, type CalorieResult } from '../lib/calories.ts'
 import { deleteRecipe, describeError, fetchUnits, getRecipe } from '../lib/data.ts'
 import { href, navigate, paths } from '../lib/router.ts'
 import {
@@ -63,6 +64,21 @@ function RecipeView({ recipe, units }: { recipe: RecipeWithIngredients; units: U
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const servings = recipe.servings * scale.factor
+  const calories = useMemo(
+    () =>
+      recipeCalories(
+        recipe.recipe_ingredients.map((ri) => ({
+          name: ri.ingredient.name,
+          quantity: ri.quantity,
+          unit: ri.unit,
+          optional: ri.optional,
+          ingredient: ri.ingredient,
+        })),
+        recipe.servings,
+        unitsByCode,
+      ),
+    [recipe, unitsByCode],
+  )
 
   function setServings(n: number) {
     setScale({ factor: n / recipe.servings, reason: null })
@@ -182,6 +198,8 @@ function RecipeView({ recipe, units }: { recipe: RecipeWithIngredients; units: U
             </div>
           ))}
         </section>
+
+        <CaloriesBlock result={calories} factor={scale.factor} servings={servings} recipe={recipe} />
 
         {recipe.steps.length > 0 && (
           <section>
@@ -391,5 +409,87 @@ function LimitingForm({ item, unit, units, unitsByCode, onApply, onCancel }: Lim
         </button>
       </div>
     </form>
+  )
+}
+
+function CaloriesBlock({
+  result,
+  factor,
+  servings,
+  recipe,
+}: {
+  result: CalorieResult
+  factor: number
+  servings: number
+  recipe: RecipeWithIngredients
+}) {
+  const [open, setOpen] = useState(false)
+  const idByName = new Map(recipe.recipe_ingredients.map((ri) => [ri.ingredient.name, ri.ingredient.id]))
+
+  if (result.counted.length === 0 && result.missing.length === 0) return null
+  if (result.counted.length === 0) {
+    return (
+      <section className="card stack-sm">
+        <h2 className="calories-title">Calories</h2>
+        <p className="muted">
+          Aucun ingrédient n’a encore de calories.{' '}
+          <a href={href(paths.caloriesTodo)}>Les relier à CIQUAL</a>
+        </p>
+      </section>
+    )
+  }
+
+  const prefix = result.complete ? '≈' : 'au moins'
+  const assumed = result.counted.filter((c) => c.assumedDensity)
+
+  return (
+    <section className="card stack-sm">
+      <h2 className="calories-title">
+        {prefix} {formatKcal(result.perServing)} <span className="muted small">/ portion</span>
+      </h2>
+      <p className="muted small">
+        {prefix} {formatKcal(result.total * factor)} pour {formatServings(servings)} portion
+        {servings >= 2 ? 's' : ''}
+      </p>
+
+      {result.missing.length > 0 && (
+        <p className="small warning">
+          Non compté{result.missing.length > 1 ? 's' : ''} :{' '}
+          {result.missing.map((m, i) => {
+            const id = idByName.get(m.name)
+            const label = m.reason === 'no-kcal' ? 'calories inconnues' : 'poids par pièce inconnu'
+            return (
+              <span key={m.name}>
+                {i > 0 && ', '}
+                {id ? <a href={href(paths.ingredient(id))}>{m.name}</a> : m.name} ({label})
+              </span>
+            )
+          })}
+          .
+        </p>
+      )}
+      {assumed.length > 0 && (
+        <p className="muted small">
+          Densité inconnue, comptée comme de l’eau : {assumed.map((c) => c.name).join(', ')}.
+        </p>
+      )}
+
+      <button type="button" className="link-button" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? 'Masquer le détail' : 'Voir le détail par ingrédient'}
+      </button>
+      {open && (
+        <ul className="calorie-detail">
+          {[...result.counted]
+            .sort((a, b) => b.kcal - a.kcal)
+            .map((c) => (
+              <li key={c.name}>
+                <span>{c.name}</span>
+                <span className="muted small">{Math.round(c.grams * factor)} g</span>
+                <span>{formatKcal(c.kcal * factor)}</span>
+              </li>
+            ))}
+        </ul>
+      )}
+    </section>
   )
 }

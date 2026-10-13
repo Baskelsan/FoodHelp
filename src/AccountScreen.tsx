@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { href, paths } from './lib/router.ts'
 import { supabase } from './lib/supabase.ts'
 import { clearShoppingCache } from './shopping/useShoppingList.ts'
 
@@ -49,7 +50,19 @@ export default function AccountScreen({ session }: { session: Session }) {
           {signingOut ? 'Déconnexion…' : 'Se déconnecter'}
         </button>
 
+        <a className="button button-secondary" href={href(paths.caloriesTodo)}>
+          Calories à compléter
+        </a>
+
         <p className="muted small">Version du {buildDate}</p>
+        <p className="muted small">
+          Données nutritionnelles : Table de composition nutritionnelle des aliments Ciqual 2025,
+          Anses, sous{' '}
+          <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noreferrer">
+            Licence Ouverte
+          </a>
+          .
+        </p>
       </main>
     </>
   )

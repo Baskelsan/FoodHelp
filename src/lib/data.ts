@@ -1,8 +1,10 @@
 import type {
   Aisle,
+  CiqualFood,
   Ingredient,
   IngredientSummary,
   InventoryItem,
+  RecipeListEntry,
   RecipeSummary,
   RecipeWithIngredients,
   SaveRecipePayload,
@@ -42,10 +44,26 @@ export function fetchUnits(): Promise<Unit[]> {
 export async function listRecipes(): Promise<RecipeSummary[]> {
   const { data, error } = await supabase
     .from('recipes')
-    .select('id, title, tags, servings, prep_minutes, cook_minutes')
+    .select('id, title, tags, servings, prep_minutes, cook_minutes, created_at')
     .order('title')
   if (error) throw error
   return data as RecipeSummary[]
+}
+
+/** Champs d'un ingrédient utiles au calcul des calories */
+const NUTRITION_REF = 'density_g_per_ml, piece_weight_g, kcal_per_100g, ciqual_code, ciqual:ciqual_foods ( kcal_100g, name_fr )'
+
+/** Recettes de la liste, avec leurs ingrédients pour calculer les calories. */
+export async function listRecipeEntries(): Promise<RecipeListEntry[]> {
+  const { data, error } = await supabase
+    .from('recipes')
+    .select(
+      `id, title, tags, servings, prep_minutes, cook_minutes, created_at,
+       recipe_ingredients ( quantity, unit, optional, ingredient:ingredients ( name, ${NUTRITION_REF} ) )`,
+    )
+    .order('title')
+  if (error) throw error
+  return data as unknown as RecipeListEntry[]
 }
 
 export async function getRecipe(id: string): Promise<RecipeWithIngredients | null> {
@@ -54,7 +72,7 @@ export async function getRecipe(id: string): Promise<RecipeWithIngredients | nul
     .select(
       `*, recipe_ingredients (
         id, position, quantity, unit, optional, section, note,
-        ingredient:ingredients ( id, name, default_unit, density_g_per_ml, piece_weight_g )
+        ingredient:ingredients ( id, name, default_unit, ${NUTRITION_REF} )
       )`,
     )
     .eq('id', id)
@@ -269,4 +287,54 @@ export async function deleteShoppingItems(ids: string[]): Promise<void> {
   if (ids.length === 0) return
   const { error } = await supabase.from('shopping_list_items').delete().in('id', ids)
   if (error) throw error
+}
+
+// --- CIQUAL ---------------------------------------------------------------------
+
+export async function searchCiqual(query: string, limit = 20): Promise<CiqualFood[]> {
+  if (!query.trim()) return []
+  const { data, error } = await supabase.rpc('search_ciqual', { p_query: query, p_limit: limit })
+  if (error) throw error
+  return data as CiqualFood[]
+}
+
+export interface CiqualSuggestion {
+  query: string
+  rank: number
+  alim_code: number
+  name_fr: string
+  kcal_100g: number | null
+}
+
+/** Meilleures correspondances CIQUAL pour plusieurs noms d'ingrédients. */
+export async function suggestCiqual(names: string[], perName = 3): Promise<CiqualSuggestion[]> {
+  if (names.length === 0) return []
+  const { data, error } = await supabase.rpc('suggest_ciqual', {
+    p_names: names,
+    p_per_name: perName,
+  })
+  if (error) throw error
+  return data as CiqualSuggestion[]
+}
+
+export async function getCiqualFood(code: number): Promise<CiqualFood | null> {
+  const { data, error } = await supabase
+    .from('ciqual_foods')
+    .select('*')
+    .eq('alim_code', code)
+    .maybeSingle()
+  if (error) throw error
+  return data as CiqualFood | null
+}
+
+/** Ingrédients sans calories : ni lien CIQUAL, ni valeur saisie. */
+export async function listIngredientsWithoutKcal(): Promise<IngredientSummary[]> {
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('id, name, default_unit')
+    .is('ciqual_code', null)
+    .is('kcal_per_100g', null)
+    .order('name')
+  if (error) throw error
+  return data as IngredientSummary[]
 }

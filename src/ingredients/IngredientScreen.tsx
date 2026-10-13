@@ -1,12 +1,22 @@
-import { useState, type FormEvent } from 'react'
-import type { Aisle, Ingredient, Unit } from '../lib/db-types.ts'
-import { describeError, fetchUnits, getIngredient, listAisles, updateIngredient } from '../lib/data.ts'
+import { useEffect, useState, type FormEvent } from 'react'
+import { formatKcal } from '../lib/calories.ts'
+import type { Aisle, CiqualFood, Ingredient, Unit } from '../lib/db-types.ts'
+import {
+  describeError,
+  fetchUnits,
+  getCiqualFood,
+  getIngredient,
+  listAisles,
+  searchCiqual,
+  updateIngredient,
+} from '../lib/data.ts'
 import { parseQuantity } from '../lib/units.ts'
 import { useAsync } from '../lib/useAsync.ts'
 
 async function load(id: string) {
   const [ingredient, units, aisles] = await Promise.all([getIngredient(id), fetchUnits(), listAisles()])
-  return { ingredient, units, aisles }
+  const ciqual = ingredient?.ciqual_code ? await getCiqualFood(ingredient.ciqual_code) : null
+  return { ingredient, units, aisles, ciqual }
 }
 
 function goBack() {
@@ -38,7 +48,14 @@ export default function IngredientScreen({ id }: { id: string }) {
       </main>
     )
   }
-  return <IngredientForm ingredient={data.ingredient} units={data.units} aisles={data.aisles} />
+  return (
+    <IngredientForm
+      ingredient={data.ingredient}
+      units={data.units}
+      aisles={data.aisles}
+      ciqual={data.ciqual}
+    />
+  )
 }
 
 const numberText = (n: number | null) => (n === null ? '' : String(n).replace('.', ','))
@@ -47,11 +64,15 @@ function IngredientForm({
   ingredient,
   units,
   aisles,
+  ciqual: initialCiqual,
 }: {
   ingredient: Ingredient
   units: Unit[]
   aisles: Aisle[]
+  ciqual: CiqualFood | null
 }) {
+  const [ciqual, setCiqual] = useState<CiqualFood | null>(initialCiqual)
+  const [kcal, setKcal] = useState(numberText(ingredient.kcal_per_100g))
   const [name, setName] = useState(ingredient.name)
   const [defaultUnit, setDefaultUnit] = useState(ingredient.default_unit)
   const [aisleId, setAisleId] = useState(ingredient.aisle_id ?? '')
@@ -80,6 +101,14 @@ function IngredientForm({
     const piece = optionalPositive(pieceWeight, 'Poids par pièce')
     const dens = optionalPositive(density, 'Densité')
     if (piece === 'invalid' || dens === 'invalid') return
+    let manualKcal: number | null = null
+    if (kcal.trim()) {
+      manualKcal = parseQuantity(kcal)
+      if (manualKcal === null || manualKcal < 0) {
+        setError('Calories : nombre positif attendu (kcal pour 100 g).')
+        return
+      }
+    }
 
     setSaving(true)
     try {
@@ -89,6 +118,8 @@ function IngredientForm({
         aisle_id: aisleId || null,
         piece_weight_g: piece,
         density_g_per_ml: dens,
+        ciqual_code: ciqual?.alim_code ?? null,
+        kcal_per_100g: manualKcal,
       })
       goBack()
     } catch (e) {
@@ -160,6 +191,27 @@ function IngredientForm({
             </label>
           </fieldset>
 
+          <fieldset className="fieldset">
+            <legend>Calories</legend>
+            <CiqualPicker
+              defaultQuery={ingredient.name}
+              selected={ciqual}
+              onSelect={setCiqual}
+            />
+            <label className="field">
+              <span>Ou valeur saisie (kcal pour 100 g)</span>
+              <input
+                inputMode="decimal"
+                placeholder="ex. d’après l’étiquette du produit"
+                value={kcal}
+                onChange={(e) => setKcal(e.target.value)}
+              />
+              <span className="muted small">
+                Si elle est remplie, elle remplace la valeur CIQUAL.
+              </span>
+            </label>
+          </fieldset>
+
           {error && <p className="error" role="alert">{error}</p>}
           <button type="submit" className="button" disabled={saving}>
             {saving ? 'Enregistrement…' : 'Enregistrer'}
@@ -167,5 +219,118 @@ function IngredientForm({
         </form>
       </main>
     </>
+  )
+}
+
+function CiqualPicker({
+  defaultQuery,
+  selected,
+  onSelect,
+}: {
+  defaultQuery: string
+  selected: CiqualFood | null
+  onSelect: (food: CiqualFood | null) => void
+}) {
+  const [searching, setSearching] = useState(!selected)
+  const [query, setQuery] = useState(defaultQuery)
+  const [results, setResults] = useState<CiqualFood[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // Recherche au fil de la frappe, avec un court délai
+  useEffect(() => {
+    if (!searching) return
+    const q = query.trim()
+    if (!q) {
+      setResults([])
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    const timer = setTimeout(() => {
+      searchCiqual(q, 15).then(
+        (foods) => {
+          if (cancelled) return
+          setResults(foods)
+          setError(null)
+          setLoading(false)
+        },
+        (e: unknown) => {
+          if (cancelled) return
+          setError(describeError(e))
+          setLoading(false)
+        },
+      )
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [query, searching])
+
+  if (selected && !searching) {
+    return (
+      <div className="ciqual-selected">
+        <span className="muted small">Aliment CIQUAL</span>
+        <span>{selected.name_fr}</span>
+        <span className="muted small">
+          {selected.kcal_100g === null ? 'kcal inconnues dans CIQUAL' : `${formatKcal(selected.kcal_100g)} / 100 g`}
+        </span>
+        <div className="row">
+          <button type="button" className="link-button" onClick={() => setSearching(true)}>
+            Changer
+          </button>
+          <button type="button" className="link-button" onClick={() => onSelect(null)}>
+            Retirer le lien
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="stack-sm">
+      <label className="field">
+        <span>Rechercher dans CIQUAL</span>
+        <input
+          type="search"
+          placeholder="ex. lait demi-écrémé"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      {loading && <p className="muted small">Recherche…</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      {!loading && query.trim() && results.length === 0 && !error && (
+        <p className="muted small">Aucun aliment trouvé. Essaie un autre mot.</p>
+      )}
+      {results.length > 0 && (
+        <ul className="ciqual-results">
+          {results.map((food) => (
+            <li key={food.alim_code}>
+              <button
+                type="button"
+                className="suggestion"
+                onClick={() => {
+                  onSelect(food)
+                  setSearching(false)
+                }}
+              >
+                <span>{food.name_fr}</span>
+                <span className="muted small">
+                  {food.kcal_100g === null ? 'kcal inconnues' : `${formatKcal(food.kcal_100g)} / 100 g`}
+                  {food.group_name ? ` · ${food.group_name}` : ''}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {selected && (
+        <button type="button" className="link-button" onClick={() => setSearching(false)}>
+          Garder « {selected.name_fr} »
+        </button>
+      )}
+    </div>
   )
 }

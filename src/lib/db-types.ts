@@ -46,8 +46,31 @@ export interface Recipe {
 
 export type RecipeSummary = Pick<
   Recipe,
-  'id' | 'title' | 'tags' | 'servings' | 'prep_minutes' | 'cook_minutes'
+  'id' | 'title' | 'tags' | 'servings' | 'prep_minutes' | 'cook_minutes' | 'created_at'
 >
+
+export interface CiqualFood {
+  alim_code: number
+  name_fr: string
+  group_name: string | null
+  kcal_100g: number | null
+}
+
+/** Données d'un ingrédient nécessaires au calcul des calories */
+export type NutritionRef = Pick<
+  Ingredient,
+  'density_g_per_ml' | 'piece_weight_g' | 'kcal_per_100g' | 'ciqual_code'
+> & { ciqual: Pick<CiqualFood, 'kcal_100g' | 'name_fr'> | null }
+
+/** Recette de la liste, avec de quoi calculer ses calories */
+export interface RecipeListEntry extends RecipeSummary {
+  recipe_ingredients: {
+    quantity: number | null
+    unit: string | null
+    optional: boolean
+    ingredient: NutritionRef & { name: string }
+  }[]
+}
 
 export interface RecipeIngredient {
   id: string
@@ -60,7 +83,8 @@ export interface RecipeIngredient {
   ingredient: Pick<
     Ingredient,
     'id' | 'name' | 'default_unit' | 'density_g_per_ml' | 'piece_weight_g'
-  >
+  > &
+    NutritionRef
 }
 
 export interface RecipeWithIngredients extends Recipe {

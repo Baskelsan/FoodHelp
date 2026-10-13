@@ -21,6 +21,18 @@ Les icônes PWA sont générées au build depuis `public/icon.svg`.
 
 Migrations SQL dans `supabase/migrations/`, à coller dans le SQL Editor de Supabase.
 
+### Table CIQUAL (calories)
+
+`supabase/seed/ciqual_foods.csv` contient la table Ciqual 2025 de l'Anses
+([source](https://doi.org/10.57745/RDMHWY), Licence Ouverte Etalab 2.0), à importer dans la
+table `ciqual_foods` (Table Editor → Insert → Import data from CSV).
+
+Pour la régénérer depuis une nouvelle version du fichier XLSX officiel :
+
+```bash
+python scripts/ciqual_to_csv.py "Table Ciqual 2025_FR_2025_11_03.xlsx" supabase/seed/ciqual_foods.csv
+```
+
 ## Déploiement
 
 Chaque push sur `main` déclenche `.github/workflows/deploy.yml` (build + GitHub Pages).

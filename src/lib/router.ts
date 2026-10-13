@@ -15,6 +15,7 @@ export type Route =
   | { name: 'shopping-generate' }
   | { name: 'aisles' }
   | { name: 'ingredient'; id: string }
+  | { name: 'calories-todo' }
   | { name: 'account' }
 
 export const paths = {
@@ -30,6 +31,7 @@ export const paths = {
   shoppingGenerate: '/courses/recettes',
   aisles: '/courses/rayons',
   ingredient: (id: string) => `/ingredients/${id}`,
+  caloriesTodo: '/ingredients/calories',
   account: '/compte',
 }
 
@@ -46,7 +48,10 @@ export function parseRoute(hash: string): Route {
     if (parts[1] === 'rayons') return { name: 'aisles' }
     return { name: 'shopping' }
   }
-  if (parts[0] === 'ingredients' && parts[1]) return { name: 'ingredient', id: parts[1] }
+  if (parts[0] === 'ingredients' && parts[1]) {
+    if (parts[1] === 'calories') return { name: 'calories-todo' }
+    return { name: 'ingredient', id: parts[1] }
+  }
   if (parts[0] === 'recettes' && parts[1]) {
     if (parts[1] === 'nouvelle') return { name: 'recipe-new' }
     if (parts[1] === 'importer') return { name: 'recipe-import' }
@@ -87,6 +92,7 @@ export function tabOf(route: Route): Tab {
     case 'ingredient':
       return 'shopping'
     case 'account':
+    case 'calories-todo':
       return 'account'
     default:
       return 'recipes'
