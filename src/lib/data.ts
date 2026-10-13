@@ -11,7 +11,7 @@ import type {
   ShoppingListItem,
   Unit,
 } from './db-types.ts'
-import type { BackupRecipeSource } from './backup.ts'
+import type { FoodhelpBackup, RestoreSummary, restorePayload } from './backup.ts'
 import { supabase } from './supabase.ts'
 
 /** Message lisible pour une erreur Supabase ou réseau. */
@@ -340,23 +340,18 @@ export async function listIngredientsWithoutKcal(): Promise<IngredientSummary[]>
   return data as IngredientSummary[]
 }
 
-// --- Sauvegarde -------------------------------------------------------------------
+// --- Sauvegarde ------------------------------------------------------------------
 
-/** Toutes les recettes avec leurs ingrédients, pour l'export. */
-export async function listRecipesForBackup(): Promise<BackupRecipeSource[]> {
-  const { data, error } = await supabase
-    .from('recipes')
-    .select(
-      `title, description, servings, prep_minutes, cook_minutes, steps, notes, source, tags,
-       recipe_ingredients ( position, quantity, unit, optional, section, note,
-         ingredient:ingredients ( name, density_g_per_ml, piece_weight_g ) )`,
-    )
+/** Sauvegarde complète de l'utilisateur connecté (construite côté base). */
+export async function exportMyBackup(): Promise<FoodhelpBackup> {
+  const { data, error } = await supabase.rpc('export_my_backup')
   if (error) throw error
-  return data as unknown as BackupRecipeSource[]
+  return data as FoodhelpBackup
 }
 
-export async function listAllIngredients(): Promise<Ingredient[]> {
-  const { data, error } = await supabase.from('ingredients').select('*')
+/** Fusionne une sauvegarde dans les données actuelles, en une transaction. */
+export async function restoreBackup(payload: ReturnType<typeof restorePayload>): Promise<RestoreSummary> {
+  const { data, error } = await supabase.rpc('restore_backup', { p_backup: payload })
   if (error) throw error
-  return data as Ingredient[]
+  return data as RestoreSummary
 }

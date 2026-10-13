@@ -1,84 +1,29 @@
-// Sauvegarde complète au format JSON (voir docs/recipe-format.md pour les recettes)
+// Sauvegarde complète « foodhelp-backup » (voir docs/recipe-format.md).
+// Le fichier est construit par la fonction SQL private.build_backup (source unique
+// du format, utilisée par l'app et par la sauvegarde automatique).
 
-import type {
-  Aisle,
-  DateType,
-  Ingredient,
-  InventoryItem,
-  RecipeStep,
-  ShoppingListItem,
-} from './db-types.ts'
+import type { DateType, SaveRecipePayload } from './db-types.ts'
+import { extractJson, parseRecipe, type ParsedRecipe } from './recipeImport.ts'
 
 export const BACKUP_FORMAT = 'foodhelp-backup'
-export const BACKUP_VERSION = 1
 
-/** Recette complète telle que lue pour l'export */
-export interface BackupRecipeSource {
-  title: string
-  description: string | null
-  servings: number
-  prep_minutes: number | null
-  cook_minutes: number | null
-  steps: RecipeStep[]
-  notes: string | null
-  source: string | null
-  tags: string[]
-  recipe_ingredients: {
-    position: number
-    quantity: number | null
-    unit: string | null
-    optional: boolean
-    section: string | null
-    note: string | null
-    ingredient: Pick<Ingredient, 'name' | 'density_g_per_ml' | 'piece_weight_g'>
-  }[]
-}
-
-export interface BackupInput {
-  recipes: BackupRecipeSource[]
-  ingredients: Ingredient[]
-  aisles: Aisle[]
-  inventory: InventoryItem[]
-  shopping: ShoppingListItem[]
-}
-
-/** Recette au format d'import FoodHelp (champs vides omis) */
-export interface ExportedRecipe {
-  title: string
-  description?: string
-  servings: number
-  prep_minutes?: number
-  cook_minutes?: number
-  tags: string[]
-  source?: string
-  notes?: string
-  ingredients: {
-    name: string
-    quantity: number | null
-    unit: string | null
-    optional?: true
-    note?: string
-    section?: string
-    piece_weight_g?: number
-    density_g_per_ml?: number
-  }[]
-  steps: RecipeStep[]
+export interface BackupIngredient {
+  name: string
+  default_unit: string
+  aisle: string | null
+  ciqual_code: number | null
+  kcal_per_100g: number | null
+  density_g_per_ml: number | null
+  piece_weight_g: number | null
 }
 
 export interface FoodhelpBackup {
   format: typeof BACKUP_FORMAT
-  version: typeof BACKUP_VERSION
-  exported_at: string
-  recipes: ExportedRecipe[]
-  ingredients: {
-    name: string
-    default_unit: string
-    aisle: string | null
-    ciqual_code: number | null
-    kcal_per_100g: number | null
-    density_g_per_ml: number | null
-    piece_weight_g: number | null
-  }[]
+  version: number
+  exported_at?: string
+  /** Recettes au format d'import FoodHelp */
+  recipes: unknown[]
+  ingredients: BackupIngredient[]
   aisles: { name: string; position: number }[]
   inventory: {
     ingredient: string
@@ -96,80 +41,85 @@ export interface FoodhelpBackup {
   }[]
 }
 
-const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, 'fr')
-
-export function exportRecipe(recipe: BackupRecipeSource): ExportedRecipe {
-  const out: ExportedRecipe = {
-    title: recipe.title,
-    servings: recipe.servings,
-    tags: recipe.tags,
-    ingredients: [],
-    steps: recipe.steps,
-  }
-  if (recipe.description) out.description = recipe.description
-  if (recipe.prep_minutes !== null) out.prep_minutes = recipe.prep_minutes
-  if (recipe.cook_minutes !== null) out.cook_minutes = recipe.cook_minutes
-  if (recipe.source) out.source = recipe.source
-  if (recipe.notes) out.notes = recipe.notes
-
-  for (const ri of [...recipe.recipe_ingredients].sort((a, b) => a.position - b.position)) {
-    const item: ExportedRecipe['ingredients'][number] = {
-      name: ri.ingredient.name,
-      quantity: ri.quantity,
-      unit: ri.quantity === null ? null : ri.unit,
-    }
-    if (ri.optional) item.optional = true
-    if (ri.note) item.note = ri.note
-    if (ri.section) item.section = ri.section
-    if (ri.ingredient.piece_weight_g !== null) item.piece_weight_g = ri.ingredient.piece_weight_g
-    if (ri.ingredient.density_g_per_ml !== null) item.density_g_per_ml = ri.ingredient.density_g_per_ml
-    out.ingredients.push(item)
-  }
-  return out
-}
-
-export function buildBackup(input: BackupInput, now: Date = new Date()): FoodhelpBackup {
-  const aisleName = new Map(input.aisles.map((a) => [a.id, a.name]))
-  return {
-    format: BACKUP_FORMAT,
-    version: BACKUP_VERSION,
-    exported_at: now.toISOString(),
-    recipes: [...input.recipes]
-      .sort((a, b) => a.title.localeCompare(b.title, 'fr'))
-      .map(exportRecipe),
-    ingredients: [...input.ingredients].sort(byName).map((i) => ({
-      name: i.name,
-      default_unit: i.default_unit,
-      aisle: i.aisle_id ? (aisleName.get(i.aisle_id) ?? null) : null,
-      ciqual_code: i.ciqual_code,
-      kcal_per_100g: i.kcal_per_100g,
-      density_g_per_ml: i.density_g_per_ml,
-      piece_weight_g: i.piece_weight_g,
-    })),
-    aisles: [...input.aisles]
-      .sort((a, b) => a.position - b.position)
-      .map((a) => ({ name: a.name, position: a.position })),
-    inventory: input.inventory
-      .map((i) => ({
-        ingredient: i.ingredient.name,
-        quantity: i.quantity,
-        unit: i.unit,
-        expires_on: i.expires_on,
-        date_type: i.date_type,
-        note: i.note,
-      }))
-      .sort((a, b) => a.ingredient.localeCompare(b.ingredient, 'fr')),
-    shopping_list: input.shopping.map((s) => ({
-      ingredient: s.ingredient?.name ?? s.label ?? '?',
-      quantity: s.quantity,
-      unit: s.unit,
-      checked: s.checked,
-    })),
-  }
-}
-
 /** Nom de fichier : foodhelp-sauvegarde-2026-10-13.json (date locale) */
 export function backupFileName(now: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `foodhelp-sauvegarde-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
+}
+
+// --- Restauration -----------------------------------------------------------------
+
+export interface ParsedBackup {
+  backup: FoodhelpBackup
+  /** Recettes relues comme à l'import (erreurs, avertissements, payload normalisé) */
+  recipes: ParsedRecipe[]
+}
+
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
+
+/** Lit un fichier de sauvegarde ; renvoie une erreur lisible s'il ne convient pas. */
+export function parseBackup(text: string): { parsed: ParsedBackup | null; error: string | null } {
+  let data: unknown
+  try {
+    data = extractJson(text)
+  } catch {
+    return { parsed: null, error: 'Fichier illisible : choisis une sauvegarde FoodHelp (.json).' }
+  }
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return { parsed: null, error: 'Ce fichier n’est pas une sauvegarde FoodHelp.' }
+  }
+  const raw = data as Record<string, unknown>
+  if (raw.format !== BACKUP_FORMAT) {
+    return {
+      parsed: null,
+      error:
+        raw.format === 'foodhelp'
+          ? 'Ce fichier contient seulement des recettes : utilise Recettes → Importer.'
+          : 'Ce fichier n’est pas une sauvegarde FoodHelp (format « foodhelp-backup » attendu).',
+    }
+  }
+  const backup: FoodhelpBackup = {
+    format: BACKUP_FORMAT,
+    version: typeof raw.version === 'number' ? raw.version : 1,
+    exported_at: typeof raw.exported_at === 'string' ? raw.exported_at : undefined,
+    recipes: asArray(raw.recipes),
+    ingredients: asArray(raw.ingredients) as FoodhelpBackup['ingredients'],
+    aisles: asArray(raw.aisles) as FoodhelpBackup['aisles'],
+    inventory: asArray(raw.inventory) as FoodhelpBackup['inventory'],
+    shopping_list: asArray(raw.shopping_list) as FoodhelpBackup['shopping_list'],
+  }
+  return { parsed: { backup, recipes: backup.recipes.map(parseRecipe) }, error: null }
+}
+
+export interface RestoreChoices {
+  /** Rayons et ingrédients (créés ou complétés, jamais écrasés) */
+  ingredients: boolean
+  /** Index des recettes à restaurer */
+  recipes: Set<number>
+  inventory: boolean
+  shopping: boolean
+}
+
+/** Paramètre de la fonction SQL restore_backup selon les choix de l'utilisateur. */
+export function restorePayload(parsed: ParsedBackup, choices: RestoreChoices) {
+  const recipes: SaveRecipePayload[] = parsed.recipes
+    .filter((r, i) => choices.recipes.has(i) && r.errors.length === 0)
+    .map((r) => r.payload)
+  return {
+    format: BACKUP_FORMAT,
+    aisles: choices.ingredients ? parsed.backup.aisles : [],
+    ingredients: choices.ingredients ? parsed.backup.ingredients : [],
+    recipes,
+    inventory: choices.inventory ? parsed.backup.inventory : [],
+    shopping_list: choices.shopping ? parsed.backup.shopping_list : [],
+  }
+}
+
+export interface RestoreSummary {
+  aisles: number
+  ingredients_created: number
+  ingredients_completed: number
+  recipes: number
+  inventory: number
+  shopping_list: number
 }

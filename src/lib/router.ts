@@ -17,6 +17,7 @@ export type Route =
   | { name: 'ingredient'; id: string }
   | { name: 'calories-todo' }
   | { name: 'backup' }
+  | { name: 'restore' }
   | { name: 'account' }
 
 export const paths = {
@@ -35,12 +36,15 @@ export const paths = {
   caloriesTodo: '/ingredients/calories',
   account: '/compte',
   backup: '/compte/sauvegarde',
+  restore: '/compte/restaurer',
 }
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#/, '').split('/').filter(Boolean)
   if (parts[0] === 'compte') {
-    return parts[1] === 'sauvegarde' ? { name: 'backup' } : { name: 'account' }
+    if (parts[1] === 'sauvegarde') return { name: 'backup' }
+    if (parts[1] === 'restaurer') return { name: 'restore' }
+    return { name: 'account' }
   }
   if (parts[0] === 'stock') {
     if (parts[1] === 'nouveau') return { name: 'inventory-new' }
@@ -98,6 +102,7 @@ export function tabOf(route: Route): Tab {
     case 'account':
     case 'calories-todo':
     case 'backup':
+    case 'restore':
       return 'account'
     default:
       return 'recipes'

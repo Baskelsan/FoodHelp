@@ -56,6 +56,9 @@ export default function AccountScreen({ session }: { session: Session }) {
         <a className="button button-secondary" href={href(paths.backup)}>
           Sauvegarde (export JSON)
         </a>
+        <a className="button button-secondary" href={href(paths.restore)}>
+          Restaurer une sauvegarde
+        </a>
 
         <p className="muted small">Version du {buildDate}</p>
         <p className="muted small">

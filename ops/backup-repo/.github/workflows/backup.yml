@@ -1,0 +1,60 @@
+name: Sauvegarde FoodHelp
+
+# À placer dans le repo PRIVÉ de sauvegarde (voir ops/backup-repo/README.md du repo
+# FoodHelp). Chaque nuit, récupère la sauvegarde complète et la commite si elle a
+# changé : l'historique git garde toutes les versions.
+on:
+  schedule:
+    - cron: '0 3 * * *' # 3 h UTC = 4 h (hiver) / 5 h (été) à Paris
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Récupérer la sauvegarde
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+        run: |
+          set -euo pipefail
+          base=$(printf '%s' "$SUPABASE_URL" | sed -E 's#^(https://[^/]+).*#\1#')
+          # Le jeton passe par jq pour être correctement échappé dans le JSON
+          jq -n --arg token "$BACKUP_TOKEN" '{p_token: $token}' > request.json
+          curl --fail --silent --show-error --max-time 60 \
+            -X POST "$base/rest/v1/rpc/export_backup" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            --data @request.json \
+            -o response.json
+          rm request.json
+          # Refuse tout ce qui n'est pas une sauvegarde valide (erreur, réponse vide…)
+          jq -e '.format == "foodhelp-backup" and (.recipes | type == "array")' response.json > /dev/null
+          # Sans la date d'export : pas de commit si les données n'ont pas changé
+          jq --sort-keys 'del(.exported_at)' response.json > foodhelp-backup.json
+          rm response.json
+          jq -r '"\(.recipes | length) recettes, \(.ingredients | length) ingrédients, \(.inventory | length) produits en stock"' foodhelp-backup.json
+
+      - name: Enregistrer si changement
+        run: |
+          set -euo pipefail
+          git add foodhelp-backup.json
+          if git diff --cached --quiet; then
+            echo "Aucun changement depuis la dernière sauvegarde."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Sauvegarde du $(date -u +%F)"
+          git push

@@ -132,9 +132,13 @@ L'écran **Compte → Sauvegarde** exporte un fichier `foodhelp-sauvegarde-AAAA-
 ```
 
 Les liens se font par nom d'ingrédient (pas d'identifiants internes). Aucune donnée de compte
-n'est exportée. Coller ce fichier dans **Recettes → Importer** restaure les recettes (avec
-poids par pièce et densités) ; la restauration des autres sections est prévue avec la
-sauvegarde automatique.
+n'est exportée. Le fichier est construit côté base par `private.build_backup`, utilisée à la
+fois par l'app et par la sauvegarde automatique nocturne (`ops/backup-repo/`).
+
+Restauration : **Compte → Restaurer une sauvegarde** fusionne le fichier avec les données
+actuelles, en une seule transaction, sans rien supprimer ni écraser (les ingrédients existants
+sont seulement complétés). Coller le fichier dans **Recettes → Importer** ne restaure que les
+recettes.
 
 ## Instructions à donner à Claude
 

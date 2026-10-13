@@ -1,146 +1,106 @@
 import { describe, expect, it } from 'vitest'
-import { backupFileName, buildBackup, type BackupInput } from './backup.ts'
-import type { Ingredient } from './db-types.ts'
-import { parseImport } from './recipeImport.ts'
+import { backupFileName, parseBackup, restorePayload } from './backup.ts'
 
-const ingredient = (id: string, name: string, patch: Partial<Ingredient> = {}): Ingredient => ({
-  id,
-  name,
-  default_unit: 'g',
-  aisle_id: null,
-  ciqual_code: null,
-  kcal_per_100g: null,
-  density_g_per_ml: null,
-  piece_weight_g: null,
-  ...patch,
-})
-
-const OEUF = ingredient('i-oeuf', 'Œuf', { default_unit: 'piece', piece_weight_g: 55, ciqual_code: 22000, aisle_id: 'a-frais' })
-const LAIT = ingredient('i-lait', 'Lait', { default_unit: 'ml', density_g_per_ml: 1.03, aisle_id: 'a-frais' })
-const FARINE = ingredient('i-farine', 'Farine', { kcal_per_100g: 350 })
-const SEL = ingredient('i-sel', 'Sel')
-
-const ref = (i: Ingredient) => ({
-  name: i.name,
-  density_g_per_ml: i.density_g_per_ml,
-  piece_weight_g: i.piece_weight_g,
-})
-
-const INPUT: BackupInput = {
+// Extrait d'une sauvegarde telle que produite par la fonction SQL private.build_backup
+const BACKUP = {
+  format: 'foodhelp-backup',
+  version: 1,
+  exported_at: '2026-10-13T20:00:00+00:00',
+  aisles: [
+    { name: 'Crèmerie', position: 0 },
+    { name: 'Épicerie', position: 1 },
+  ],
   recipes: [
     {
-      title: 'Crêpes',
-      description: 'Les crêpes du dimanche.',
-      servings: 4,
-      prep_minutes: 10,
-      cook_minutes: null,
-      steps: [{ text: 'Mélanger.' }, { text: 'Cuire.', minutes: 20 }],
-      notes: null,
-      source: 'Claude',
       tags: ['dessert'],
-      recipe_ingredients: [
-        { position: 1, quantity: 3, unit: 'piece', optional: false, section: 'Pâte', note: null, ingredient: ref(OEUF) },
-        { position: 0, quantity: 250, unit: 'g', optional: false, section: 'Pâte', note: 'tamisée', ingredient: ref(FARINE) },
-        { position: 2, quantity: 500, unit: 'ml', optional: false, section: null, note: null, ingredient: ref(LAIT) },
-        { position: 3, quantity: null, unit: 'g', optional: true, section: null, note: null, ingredient: ref(SEL) },
+      steps: [{ text: 'Mélanger.' }, { text: 'Cuire.', minutes: 20 }],
+      title: 'Crêpes',
+      source: 'Claude',
+      servings: 4,
+      description: 'Du dimanche',
+      ingredients: [
+        { name: 'Farine', note: 'tamisée', unit: 'g', section: 'Pâte', quantity: 250 },
+        { name: 'Œuf', unit: 'piece', section: 'Pâte', quantity: 3, piece_weight_g: 55 },
+        { name: 'Lait', unit: 'ml', quantity: 500, density_g_per_ml: 1.03 },
+        { name: 'Sel', optional: true },
       ],
+      prep_minutes: 10,
     },
-  ],
-  ingredients: [SEL, OEUF, LAIT, FARINE],
-  aisles: [
-    { id: 'a-sec', name: 'Épicerie', position: 1 },
-    { id: 'a-frais', name: 'Crèmerie', position: 0 },
+    { title: '', ingredients: [{ name: 'X', quantity: 1, unit: 'louche' }] },
   ],
   inventory: [
-    {
-      id: 'inv-1',
-      ingredient_id: 'i-lait',
-      quantity: 1,
-      unit: 'l',
-      expires_on: '2026-10-20',
-      date_type: 'DLC',
-      note: null,
-      created_at: '',
-      ingredient: { ...LAIT },
-    },
+    { note: null, unit: 'l', quantity: 1, date_type: 'DLC', expires_on: '2026-10-20', ingredient: 'Lait' },
   ],
-  shopping: [
-    {
-      id: 's-1',
-      ingredient_id: 'i-oeuf',
-      label: null,
-      quantity: 6,
-      unit: 'piece',
-      checked: true,
-      recipe_id: null,
-      created_at: '',
-      ingredient: { ...OEUF },
-    },
+  ingredients: [
+    { name: 'Œuf', aisle: 'Crèmerie', ciqual_code: 22000, default_unit: 'piece', kcal_per_100g: null, piece_weight_g: 55, density_g_per_ml: null },
   ],
+  shopping_list: [{ unit: 'piece', checked: true, quantity: 6, ingredient: 'Œuf' }],
 }
 
-describe('buildBackup', () => {
-  const backup = buildBackup(INPUT, new Date('2026-10-13T20:00:00Z'))
-
-  it('produit l’enveloppe et toutes les sections', () => {
-    expect(backup).toMatchObject({
-      format: 'foodhelp-backup',
-      version: 1,
-      exported_at: '2026-10-13T20:00:00.000Z',
-    })
-    expect(backup.aisles).toEqual([
-      { name: 'Crèmerie', position: 0 },
-      { name: 'Épicerie', position: 1 },
-    ])
-    expect(backup.ingredients.map((i) => [i.name, i.aisle])).toEqual([
-      ['Farine', null],
-      ['Lait', 'Crèmerie'],
-      ['Œuf', 'Crèmerie'],
-      ['Sel', null],
-    ])
-    expect(backup.ingredients.find((i) => i.name === 'Œuf')).toMatchObject({ ciqual_code: 22000, piece_weight_g: 55 })
-    expect(backup.inventory).toEqual([
-      { ingredient: 'Lait', quantity: 1, unit: 'l', expires_on: '2026-10-20', date_type: 'DLC', note: null },
-    ])
-    expect(backup.shopping_list).toEqual([{ ingredient: 'Œuf', quantity: 6, unit: 'piece', checked: true }])
-  })
-
-  it('exporte les recettes au format d’import, dans l’ordre et sans champs vides', () => {
-    const [recipe] = backup.recipes
-    expect(recipe).not.toHaveProperty('notes')
-    expect(recipe).not.toHaveProperty('cook_minutes')
-    expect(recipe.ingredients).toEqual([
-      { name: 'Farine', quantity: 250, unit: 'g', note: 'tamisée', section: 'Pâte' },
-      { name: 'Œuf', quantity: 3, unit: 'piece', section: 'Pâte', piece_weight_g: 55 },
-      { name: 'Lait', quantity: 500, unit: 'ml', density_g_per_ml: 1.03 },
-      { name: 'Sel', quantity: null, unit: null, optional: true },
-    ])
-  })
-
-  it('se réimporte telle quelle par l’écran d’import', () => {
-    const result = parseImport(JSON.stringify(backup, null, 2))
-    expect(result.error).toBeNull()
-    expect(result.warnings).toEqual([])
-    const [r] = result.recipes
-    expect(r.errors).toEqual([])
-    expect(r.payload).toMatchObject({
+describe('parseBackup', () => {
+  it('lit une sauvegarde et relit ses recettes comme à l’import', () => {
+    const { parsed, error } = parseBackup(JSON.stringify(BACKUP, null, 2))
+    expect(error).toBeNull()
+    expect(parsed!.backup.aisles).toHaveLength(2)
+    const [crepes, broken] = parsed!.recipes
+    expect(crepes.errors).toEqual([])
+    expect(crepes.payload).toMatchObject({
       title: 'Crêpes',
-      description: 'Les crêpes du dimanche.',
       servings: 4,
       prep_minutes: 10,
       cook_minutes: null,
       tags: ['dessert'],
-      source: 'Claude',
       steps: [{ text: 'Mélanger.' }, { text: 'Cuire.', minutes: 20 }],
     })
-    expect(r.payload.ingredients.map((i) => [i.name, i.quantity, i.unit, i.optional, i.section, i.note])).toEqual([
-      ['Farine', 250, 'g', false, 'Pâte', 'tamisée'],
-      ['Œuf', 3, 'piece', false, 'Pâte', null],
-      ['Lait', 500, 'ml', false, null, null],
-      ['Sel', null, null, true, null, null],
+    expect(crepes.payload.ingredients.map((i) => [i.name, i.quantity, i.unit, i.optional])).toEqual([
+      ['Farine', 250, 'g', false],
+      ['Œuf', 3, 'piece', false],
+      ['Lait', 500, 'ml', false],
+      ['Sel', null, null, true],
     ])
-    expect(r.payload.ingredients[1].piece_weight_g).toBe(55)
-    expect(r.payload.ingredients[2].density_g_per_ml).toBe(1.03)
+    expect(broken.errors.length).toBeGreaterThan(0)
+  })
+
+  it('refuse les fichiers qui ne sont pas des sauvegardes', () => {
+    expect(parseBackup('n’importe quoi').error).toMatch(/illisible/)
+    expect(parseBackup('[1,2]').error).toMatch(/pas une sauvegarde/)
+    expect(parseBackup('{"format":"foodhelp","recipes":[]}').error).toMatch(/Importer/)
+    expect(parseBackup('{"format":"autre"}').error).toMatch(/foodhelp-backup/)
+  })
+
+  it('tolère des sections absentes', () => {
+    const { parsed } = parseBackup('{"format":"foodhelp-backup","version":1}')
+    expect(parsed!.backup).toMatchObject({ recipes: [], ingredients: [], aisles: [], inventory: [], shopping_list: [] })
+  })
+})
+
+describe('restorePayload', () => {
+  const { parsed } = parseBackup(JSON.stringify(BACKUP))
+
+  it('ne garde que les sections et recettes choisies (sans recette en erreur)', () => {
+    const payload = restorePayload(parsed!, {
+      ingredients: true,
+      recipes: new Set([0, 1]),
+      inventory: false,
+      shopping: true,
+    })
+    expect(payload.format).toBe('foodhelp-backup')
+    expect(payload.aisles).toHaveLength(2)
+    expect(payload.ingredients).toHaveLength(1)
+    expect(payload.recipes.map((r) => r.title)).toEqual(['Crêpes'])
+    expect(payload.inventory).toEqual([])
+    expect(payload.shopping_list).toHaveLength(1)
+  })
+
+  it('peut ne restaurer que le stock', () => {
+    const payload = restorePayload(parsed!, {
+      ingredients: false,
+      recipes: new Set(),
+      inventory: true,
+      shopping: false,
+    })
+    expect(payload).toMatchObject({ aisles: [], ingredients: [], recipes: [], shopping_list: [] })
+    expect(payload.inventory).toHaveLength(1)
   })
 })
 

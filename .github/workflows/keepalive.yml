@@ -1,0 +1,40 @@
+name: Anti-pause Supabase
+
+# Les projets Supabase gratuits sont mis en pause après 7 jours sans activité :
+# on appelle la fonction ping() (aucune donnée) tous les 3 jours.
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # pour se réactiver (voir la dernière étape)
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Appeler Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          # Seule l'origine compte (tolère une URL collée avec /rest/v1/)
+          base=$(printf '%s' "$SUPABASE_URL" | sed -E 's#^(https://[^/]+).*#\1#')
+          curl --fail --silent --show-error --max-time 30 \
+            -X POST "$base/rest/v1/rpc/ping" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo
+          echo "Supabase a répondu."
+
+      # GitHub désactive les tâches planifiées d'un repo public après 60 jours sans
+      # commit : la réactivation à chaque passage remet ce compteur à zéro.
+      - name: Garder ce workflow actif
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"

@@ -37,3 +37,12 @@ python scripts/ciqual_to_csv.py "Table Ciqual 2025_FR_2025_11_03.xlsx" supabase/
 
 Chaque push sur `main` déclenche `.github/workflows/deploy.yml` (build + GitHub Pages).
 Secrets GitHub requis : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+
+## Maintenance automatique
+
+- `.github/workflows/keepalive.yml` : appelle la fonction `ping()` de Supabase tous les 3 jours
+  (les projets gratuits sont mis en pause après 7 jours sans activité). Se réactive lui-même
+  pour ne pas être désactivé par GitHub après 60 jours sans commit.
+- Sauvegarde nocturne dans un repo **privé** : voir [`ops/backup-repo/README.md`](ops/backup-repo/README.md).
+  Elle utilise un jeton en lecture seule (jamais la clé `service_role`).
+- Restauration : dans l'app, **Compte → Restaurer une sauvegarde** (fusion, rien n'est supprimé).

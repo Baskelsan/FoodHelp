@@ -1,26 +1,8 @@
 import { useMemo, useState } from 'react'
-import { backupFileName, buildBackup } from './lib/backup.ts'
-import {
-  describeError,
-  listAisles,
-  listAllIngredients,
-  listInventory,
-  listRecipesForBackup,
-  listShopping,
-} from './lib/data.ts'
+import { backupFileName } from './lib/backup.ts'
+import { describeError, exportMyBackup } from './lib/data.ts'
 import { href, paths } from './lib/router.ts'
 import { useAsync } from './lib/useAsync.ts'
-
-async function load() {
-  const [recipes, ingredients, aisles, inventory, shopping] = await Promise.all([
-    listRecipesForBackup(),
-    listAllIngredients(),
-    listAisles(),
-    listInventory(),
-    listShopping(),
-  ])
-  return buildBackup({ recipes, ingredients, aisles, inventory, shopping })
-}
 
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
 
@@ -49,13 +31,13 @@ function download(json: string, name: string) {
 }
 
 export default function BackupScreen() {
-  const { data: backup, error, loading, reload } = useAsync(load, [])
+  const { data: backup, error, loading, reload } = useAsync(exportMyBackup, [])
   const [status, setStatus] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const json = useMemo(() => (backup ? JSON.stringify(backup, null, 2) : ''), [backup])
   const sizeKb = Math.max(1, Math.round(new Blob([json]).size / 1024))
-  const name = backup ? backupFileName(new Date(backup.exported_at)) : ''
+  const name = backupFileName()
 
   async function save() {
     setStatus(null)
@@ -134,8 +116,7 @@ export default function BackupScreen() {
             {actionError && <p className="error" role="alert">{actionError}</p>}
 
             <p className="muted small">
-              Pour restaurer tes recettes, colle ce fichier dans Recettes → Importer. La restauration
-              complète (stock, rayons, liste) arrivera avec la sauvegarde automatique.
+              Pour remettre ces données dans l’app : Compte → Restaurer une sauvegarde.
             </p>
           </>
         )}
